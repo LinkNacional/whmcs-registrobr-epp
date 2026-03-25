@@ -102,16 +102,19 @@ class RegistroEPPDomain extends RegistroEPP {
         $objParser->parse($responseXML);
     
         $coderes = $objParser->get('coderes',$coderes);
-        
+
+        if ($coderes == '2303') {
+            $this->errorEPP('domainnotfound',$objParser,$requestXML,$responseXML);
+            return false;
+        }
+
         if ($coderes != '1000') {
             $msg = $this->errorEPP('setnsupdateerrorcode',$objParser,$requestXML,$responseXML);
             throw new Exception($msg);
         }
     
-    
         $this->set('coderes',$coderes);
-
-            
+        return true;
     }
     
     public function updateInfo($OldContacts,$NewContacts){

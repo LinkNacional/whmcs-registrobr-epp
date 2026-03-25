@@ -415,10 +415,10 @@ function registrobr_SaveNameservers($params) {
     
     try {
         $objRegistroEPP->updateNameServers($OldNameservers,$NewNameservers);
-    }     catch (Exception $e){
+    } catch (Exception $e){
+        logModuleCall('registrobr', 'SaveNameservers', $params, $e->getMessage());
         $values["error"] = $e->getMessage();
         return $values;
-        
     }
 
     return array(

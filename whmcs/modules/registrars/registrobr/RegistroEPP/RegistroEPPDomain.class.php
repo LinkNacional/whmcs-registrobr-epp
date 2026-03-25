@@ -102,7 +102,13 @@ class RegistroEPPDomain extends RegistroEPP {
         $objParser->parse($responseXML);
     
         $coderes = $objParser->get('coderes',$coderes);
-        
+
+        if ($coderes == '2303') {
+            $msg = $this->errorEPP('setnsupdateerrorcode',$objParser,$requestXML,$responseXML);
+            error_log('registrobr updateNameServers: ' . $msg);
+            return;
+        }
+
         if ($coderes != '1000') {
             $msg = $this->errorEPP('setnsupdateerrorcode',$objParser,$requestXML,$responseXML);
             throw new Exception($msg);

@@ -104,9 +104,8 @@ class RegistroEPPDomain extends RegistroEPP {
         $coderes = $objParser->get('coderes',$coderes);
 
         if ($coderes == '2303') {
-            $msg = $this->errorEPP('setnsupdateerrorcode',$objParser,$requestXML,$responseXML);
-            error_log('registrobr updateNameServers: ' . $msg);
-            return;
+            $this->errorEPP('domainnotfound',$objParser,$requestXML,$responseXML);
+            return false;
         }
 
         if ($coderes != '1000') {
@@ -114,10 +113,8 @@ class RegistroEPPDomain extends RegistroEPP {
             throw new Exception($msg);
         }
     
-    
         $this->set('coderes',$coderes);
-
-            
+        return true;
     }
     
     public function updateInfo($OldContacts,$NewContacts){

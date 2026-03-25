@@ -414,10 +414,15 @@ function registrobr_SaveNameservers($params) {
     }
     
     try {
-        $objRegistroEPP->updateNameServers($OldNameservers,$NewNameservers);
+        $result = $objRegistroEPP->updateNameServers($OldNameservers,$NewNameservers);
+        if ($result === false) {
+            $values["error"] = $objRegistroEPP->getMsgLang('domainnotfound');
+            logModuleCall('registrobr', 'SaveNameservers error 2303', $params, $values["error"], '', array('BetaPassword','ProdPassword','ProdPassphrase'));
+            return $values;
+        }
     } catch (Exception $e){
-        logModuleCall('registrobr', 'SaveNameservers', $params, $e->getMessage());
         $values["error"] = $e->getMessage();
+        logModuleCall('registrobr', 'SaveNameservers exception', $params, $values["error"], '', array('BetaPassword','ProdPassword','ProdPassphrase'));
         return $values;
     }
 

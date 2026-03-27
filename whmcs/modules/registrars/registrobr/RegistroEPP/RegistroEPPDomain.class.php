@@ -96,6 +96,11 @@ class RegistroEPPDomain extends RegistroEPP {
         }
     
         $requestXML = $this->_getXMLupdateNameserver($OldNameservers,$NewNameservers);
+        if (empty($requestXML)) {
+            # Nothing changed in NS set, keep operation idempotent.
+            $this->set('coderes','1000');
+            return;
+        }
         $responseXML = $client->request($requestXML);
     
         $objParser = New ParserResponse();
@@ -377,36 +382,51 @@ class RegistroEPPDomain extends RegistroEPP {
     }
     
     private function _getXMLupdateNameserver($OldNameservers,$NewNameservers){
-        
-
-        $ticket = $this->get('ticket');
         $domain = $this->get('domain');
-        
-        $addhosts = '';
-        $remhosts = '';
-        
-        foreach ($NewNameservers as $key => $ns){
-            # Generate XML for nameservers
-            if (!empty($ns)) {
-                $add_hosts.= '
+
+        $oldSet = array();
+        $newSet = array();
+
+        foreach ($OldNameservers as $ns) {
+            $normalized = strtolower(trim($ns));
+            $normalized = rtrim($normalized, '.');
+            if ($normalized !== '') {
+                $oldSet[$normalized] = true;
+            }
+        }
+
+        foreach ($NewNameservers as $ns) {
+            $normalized = strtolower(trim($ns));
+            $normalized = rtrim($normalized, '.');
+            if ($normalized !== '') {
+                $newSet[$normalized] = true;
+            }
+        }
+
+        $hostsToAdd = array_diff(array_keys($newSet), array_keys($oldSet));
+        $hostsToRem = array_diff(array_keys($oldSet), array_keys($newSet));
+
+        if (empty($hostsToAdd) && empty($hostsToRem)) {
+            return '';
+        }
+
+        $add_hosts = '';
+        foreach ($hostsToAdd as $ns){
+            $add_hosts .= '
                     <domain:hostAttr>
                     <domain:hostName>'.$ns.'</domain:hostName>
                     </domain:hostAttr>
                 ';
-            }
         }
-        
-        
-        foreach ($OldNameservers as $key => $ns) {
-            if (!empty($ns)){
-                $rem_hosts .= '
+
+        $rem_hosts = '';
+        foreach ($hostsToRem as $ns) {
+            $rem_hosts .= '
                     <domain:hostAttr>
                     <domain:hostName>'.$ns.'</domain:hostName>
                     </domain:hostAttr>
                 ';
-            }
         }
-        
         
         # Build request
         $request='

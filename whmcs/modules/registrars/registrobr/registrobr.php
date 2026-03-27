@@ -90,6 +90,8 @@ function registrobr_getConfigArray() {
         "TechC" => array( "FriendlyName" => "Tech Contact", "Type" => "text", "Size" => "20", "Description" => "Tech Contact used in new registrations; blank will make registrant the Tech contact" ),
         "TechDept" => array( "FriendlyName" => "Tech Department ID", "Type" => "dropdown", "Options" => $deptoptions, "Description" => $deptnames, "Default" => "1"),
         "FinanceDept" => array( "FriendlyName" => "Finance Department ID", "Type" => "dropdown", "Options" => $deptoptions, "Description" => $deptnames, "Default" => "1"),
+        "PollTicketsEnabled" => array( "FriendlyName" => "Enable Poll Ticket Creation", "Type" => "radio", "Options" => "Yes,No", "Description" => "Create support tickets from Registro.br EPP poll messages", "Default" => "Yes"),
+        "PollTicketsEmailEnabled" => array( "FriendlyName" => "Enable Poll Ticket Emails", "Type" => "radio", "Options" => "Yes,No", "Description" => "Send WHMCS ticket emails for poll-generated tickets", "Default" => "Yes"),
         "Language" => array ( "Type" => "radio", "Options" => "English,Portuguese", "Description" => "Escolha Portuguese para mensagens em Portugu&ecircs", "Default" => "English"),
                          #"UnityTesting" => array ( "Type" => "radio", "Options" => "Normal,Case1,Case2,Case3","Description" => "Use only for code quality testing", "Default" => "Normal"),
                          #"UT-Domain" => array( "Type" => "text", "Description" => "Domain name for unity testing"),

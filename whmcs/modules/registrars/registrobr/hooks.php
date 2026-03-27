@@ -31,6 +31,8 @@ add_hook('AfterCronJob', 1, function($vars) {
 
     # Grab module parameters
     $moduleparams = getregistrarconfigoptions('registrobr');
+    $pollTicketsEnabled = !isset($moduleparams['PollTicketsEnabled']) || $moduleparams['PollTicketsEnabled'] !== 'No';
+    $pollTicketsEmailEnabled = !isset($moduleparams['PollTicketsEmailEnabled']) || $moduleparams['PollTicketsEmailEnabled'] !== 'No';
 
     $objRegistroEPPPoll = RegistroEPPFactory::build('RegistroEPPPoll');
 
@@ -72,7 +74,13 @@ add_hook('AfterCronJob', 1, function($vars) {
             
             logModuleCall('registrobr', 'Poll debug', $moduleparams, "msgQ ".$msgid." reason ".$reason." code ".$code." content ".$content." objectId ".$objectId);
         
-            $ok = _registrobr_whmcsTickets($code,$msgid,$reason,$content,$objRegistroEPPPoll);
+            if ($pollTicketsEnabled) {
+                $ok = _registrobr_whmcsTickets($code,$msgid,$reason,$content,$objRegistroEPPPoll,$moduleparams,$pollTicketsEmailEnabled);
+            }
+            else {
+                logModuleCall('registrobr', 'Poll ticket creation disabled', $moduleparams, "msgQ " . $msgid . " code " . $code . " objectId " . $objectId);
+                $ok = true;
+            }
 
             if($ok){
                 $objRegistroEPPPoll->sendAck();
@@ -220,9 +228,11 @@ EOF;
 
 
 
-function _registrobr_whmcsTickets($code,$msgid,$reason,$content,$objRegistroEPPPoll){
+function _registrobr_whmcsTickets($code,$msgid,$reason,$content,$objRegistroEPPPoll,$moduleparams = null,$pollTicketsEmailEnabled = true){
 
-    $moduleparams = getregistrarconfigoptions('registrobr');
+    if ($moduleparams === null) {
+        $moduleparams = getregistrarconfigoptions('registrobr');
+    }
     
     $automation = false;
     
@@ -298,6 +308,12 @@ function _registrobr_whmcsTickets($code,$msgid,$reason,$content,$objRegistroEPPP
         $issue["subject"] = "Mensagem de Poll relativa a dominios .br";
         $issue["message"] = $content;
         $issue["admin"] = true;
+
+        if (!$pollTicketsEmailEnabled) {
+            $issue["noemail"] = true;
+            $issue["noEmail"] = true;
+            $issue["noAutoEmail"] = true;
+        }
    
         $results = localAPI("OpenTicket",$issue);
 

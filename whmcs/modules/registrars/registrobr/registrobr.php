@@ -95,7 +95,7 @@ function registrobr_getConfigArray() {
                          #"UT-Domain" => array( "Type" => "text", "Description" => "Domain name for unity testing"),
                          #"UT-NameServer1" => array( "Type" => "text", "Description" => "Domain name server #1 for unity testing"),
                          #"UT-NameServer2" => array( "Type" => "text", "Description" => "Domain name server #2 for unity testing"),
-
+		"HideAutoDNS" => array( "FriendlyName" => "Hide Registro.br Auto DNS", "Type" => "radio", "Options" => "No,Yes", "Description" => "Hide Registro.br default nameservers (*.auto.dns.br) from the nameserver fields in the client panel. Select 'No' to display them to clients.", "Default" => "No"),
         "FriendlyName" => array("Type" => "System", "Value"=>"Registro.br"),
         "Description" => array("Type" => "System", "Value"=>"https://registro.br/tecnologia/provedor-hospedagem.html?secao=epp"),
 
@@ -305,9 +305,14 @@ function registrobr_GetNameservers($params) {
     $nameservers = $objRegistroEPP->get('nameservers');
 
     foreach ($nameservers as $key => $value) {
-        if (str_ends_with($value,".auto.dns.br")) {
-            $value = "";
+        $value = trim($value);
+        $value = rtrim($value, '.');
+
+        if ($params['HideAutoDNS'] === 'Yes' && str_ends_with(strtolower($value), ".auto.dns.br")) {
+            $nameservers[$key] = "";
+            continue;
         }
+        $nameservers[$key] = $value;
     }
     
     return $nameservers;
@@ -389,7 +394,7 @@ function registrobr_SaveNameservers($params) {
     
     #logModuleCall('registrobr', 'save nameservers debug',$params,$objRegistroEPP);
     
-    $OldNameservers = registrobr_GetNameservers($params);
+    $OldNameservers = $objRegistroEPP->get('nameservers');
 
     $NewNameservers["ns1"] = $params["ns1"];
     $NewNameservers["ns2"] = $params["ns2"];

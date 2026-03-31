@@ -168,7 +168,7 @@ class registrobrModuleWidget extends \WHMCS\Module\AbstractWidget
         
         $registerpricearray = array (1 => $firstyearprice, 2 => $firstyearprice + $renewalprice, 3 => $firstyearprice + 2 * $renewalprice, 4 => $firstyearprice + 3 * $renewalprice, 5 => $firstyearprice + 4 * $renewalprice, 6 => $firstyearprice + 5 * $renewalprice, 7 => $firstyearprice + 6 * $renewalprice, 8 => $firstyearprice + 7 * $renewalprice, 9 => $firstyearprice + 8 * $renewalprice, 10 => $firstyearprice + 9 * $renewalprice);
         
-        $renewpricearray = array (1 => $renewalprice, 2 => 2 * $renewalprice, 3 =>  3 * $renewalprice, 4 => 4 * $renewalprice, 5 => 5 * $renewalprice, 6 => 6 * $renewalprice, 7 => 7 * $renewalprice, 8 => 8 * $renewalprice, 9 => 9 * $renewalprice);
+        $renewpricearray = array (1 => $renewalprice, 2 => 2 * $renewalprice, 3 =>  3 * $renewalprice, 4 => 4 * $renewalprice, 5 => 5 * $renewalprice, 6 => 6 * $renewalprice, 7 => 7 * $renewalprice, 8 => 8 * $renewalprice, 9 => 9 * $renewalprice, 10 => 10 * $renewalprice);
         
 
         $success=true ;

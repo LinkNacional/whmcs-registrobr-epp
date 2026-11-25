@@ -448,6 +448,50 @@ function registrobr_SaveNameservers($params) {
 }
 
 
+# Normaliza o documento do titular (CPF/CNPJ) para o formato canonico do Registro.br.
+# A regra de validacao (isCpfValid/isCnpjValid) permanece intacta: aqui so se
+# identifica o tipo e evita o TypeError quando a entrada nao tem digito nenhum.
+function _registrobr_documentType($doc){
+    $doc = (string) $doc;
+    $digits = preg_replace('/[^0-9]/', '', $doc);
+
+    # isCpfValid()/isCnpjValid() fazem count() sobre o array de digitos; string sem
+    # digito gera TypeError no PHP 8. Barra aqui e devolve "desconhecido".
+    if ($digits === '') {
+        return NULL;
+    }
+    if (isCpfValid($doc)) {
+        return 'CPF';
+    }
+    if (isCnpjValid($doc)) {
+        return 'CNPJ';
+    }
+
+    return NULL;
+}
+
+# Formato canonico exigido no EPP (brorg:organization / brdomain:organization).
+# Idempotente: aceita documento cru ou ja mascarado, 11/14/15 digitos (o Registro.br
+# devolve CNPJ com zero a esquerda, ver GetContactDetails).
+function _registrobr_formatDocument($doc, $type){
+    $digits = preg_replace('/[^0-9]/', '', (string) $doc);
+
+    if ($type === 'CPF' && strlen($digits) === 11) {
+        return substr($digits,0,3).'.'.substr($digits,3,3).'.'.substr($digits,6,3).'-'.substr($digits,9,2);
+    }
+
+    if ($type === 'CNPJ') {
+        if (strlen($digits) === 15) {
+            $digits = substr($digits,1);
+        }
+        if (strlen($digits) === 14) {
+            return substr($digits,0,2).'.'.substr($digits,2,3).'.'.substr($digits,5,3).'/'.substr($digits,8,4).'-'.substr($digits,12,2);
+        }
+    }
+
+    return $digits;
+}
+
 function registrobr_RegisterDomain($params){
 
 
@@ -479,22 +523,20 @@ function registrobr_RegisterDomain($params){
     $isCPF = FALSE ;
     $isCNPJ = FALSE ;
 
-    if (!empty($params['additionalfields']['CPF'])) {
-        $RegistrantTaxID = $params['additionalfields']['CPF'] ;
-        $isCPF = isCpfValid($RegistrantTaxID) ;
-    }
+    # O cliente pode digitar o documento com ou sem mascara; o envio ao EPP e
+    # sempre no formato canonico.
+    foreach (array('CPF', 'CNPJ', 'CPF ou CNPJ') as $documentoField) {
+        if (empty($params['additionalfields'][$documentoField])) {
+            continue;
+        }
 
-    if (!empty($params['additionalfields']['CNPJ'])) {
-        $RegistrantTaxID = $params['additionalfields']['CNPJ'] ;
-        $isCNPJ = isCnpjValid($RegistrantTaxID) ;
-    }
+        $RegistrantTaxID = $params['additionalfields'][$documentoField] ;
+        $documentoType = _registrobr_documentType($RegistrantTaxID) ;
 
-    if (!empty($params['additionalfields']['CPF ou CNPJ'])) {
-        $RegistrantTaxID = $params['additionalfields']['CPF ou CNPJ'] ;
-        if (isCpfValid($RegistrantTaxID)) {
+        if ($documentoType === 'CPF') {
             $isCPF = TRUE ;
         }
-        if (isCnpjValid($RegistrantTaxID)) {
+        elseif ($documentoType === 'CNPJ') {
             $isCNPJ = TRUE ;
         }
     }
@@ -510,12 +552,7 @@ function registrobr_RegisterDomain($params){
     }
 
     $RegistrantTaxIDDigits = preg_replace("/[^0-9]/","",$RegistrantTaxID);
-    // if ($constantIsCPF) {
-    //     $RegistrantTaxID = substr($RegistrantTaxIDDigits,0,3).".".substr($RegistrantTaxIDDigits,3,3).".".substr($RegistrantTaxIDDigits,6,3)."-".substr($RegistrantTaxIDDigits,9,2);
-    // }
-    // else {
-    //     $RegistrantTaxID = substr($RegistrantTaxIDDigits,0,2).".".substr($RegistrantTaxIDDigits,2,3).".".substr($RegistrantTaxIDDigits,5,3)."/".substr($RegistrantTaxIDDigits,8,4)."-".substr($RegistrantTaxIDDigits,12,2);
-    // }
+    $RegistrantTaxID = _registrobr_formatDocument($RegistrantTaxIDDigits, $isCPF ? 'CPF' : 'CNPJ');
 
     $regperiod = $params["regperiod"];
 

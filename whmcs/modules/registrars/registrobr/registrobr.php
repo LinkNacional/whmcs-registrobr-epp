@@ -811,8 +811,11 @@ function registrobr_GetContactDetails($params) {
     $objRegistroEPP->set('domain',$domain);
     $objRegistroEPP->set('language',$moduleparams['Language']);
 
-    $ticket = _registrobr_getTickets($moduleparams['Username'],$params['domainid'],$domain);
-    
+    # O upstream chamava _registrobr_getTickets() aqui, funcao que nunca existiu no modulo
+    # (registrobr/whmcs-registrobr-epp@master chama e nao define). Resultado: Fatal error
+    # "Call to undefined function" e HTTP 500 em clientarea.php?action=domaincontacts.
+    # O valor nunca era usado nesta funcao, entao a chamada foi removida.
+
 
   
     
@@ -1132,6 +1135,10 @@ function registrobr_SaveContactDetails($params) {
         }
         # Check results
         $coderes = $objRegistroEPP->get('coderes');
+
+        # O ticket do pedido pendeu no EPP e nao e persistido pelo modulo; sem fonte de dado
+        # a variavel fica vazia e o ramo "Domain pending" continua inativo, como hoje.
+        $ticket = '';
 
         if ($coderes == '1000' and $ticket != '') {//Domain pending
             $values["error"] = $objRegistroEPP->getMsgLang("domainpending");

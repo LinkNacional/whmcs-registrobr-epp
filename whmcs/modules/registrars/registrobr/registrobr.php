@@ -868,6 +868,21 @@ function registrobr_GetContactDetails($params) {
     }
     $Contacts["Registrant"]= $objRegistroEPPBrorg->get('contact');
 
+    # O bloco da organizacao (brorg) traz o endereco completo. O contact:info dos
+    # handles de contato de .br volta sem street/sp/pc/voice (medido em producao),
+    # entao guardamos o bloco bom para preencher o que vier vazio.
+    $orgDefaults = array(
+        'street1' => $objRegistroEPPBrorg->get('street1'),
+        'street2' => $objRegistroEPPBrorg->get('street2'),
+        'street3' => $objRegistroEPPBrorg->get('street3'),
+        'city'    => $objRegistroEPPBrorg->get('city'),
+        'sp'      => $objRegistroEPPBrorg->get('sp'),
+        'pc'      => $objRegistroEPPBrorg->get('pc'),
+        'cc'      => $objRegistroEPPBrorg->get('cc'),
+        'voice'   => $objRegistroEPPBrorg->get('voice'),
+        'email'   => $objRegistroEPPBrorg->get('email'),
+    );
+
     $Name = $objRegistroEPPBrorg->get('name');
     #Get Info about the brorg
 
@@ -895,16 +910,24 @@ function registrobr_GetContactDetails($params) {
             return $values;
         }
 
+        # Fallback para o bloco da organizacao quando o contact:info vier vazio.
+        $contactField = function($field) use ($objRegistroEPPBrorg, $orgDefaults) {
+            $v = $objRegistroEPPBrorg->get($field);
+            if ($v === null || trim((string) $v) === '') {
+                return isset($orgDefaults[$field]) ? $orgDefaults[$field] : $v;
+            }
+            return $v;
+        };
         $values[$key][$objRegistroEPPBrorg->getMsgLang("fullnamefield")] = $objRegistroEPPBrorg->get('name');
-        $values[$key][$objRegistroEPPBrorg->getMsgLang("streetnamefield")] = $objRegistroEPPBrorg->get('street1');
-        $values[$key][$objRegistroEPPBrorg->getMsgLang("streetnumberfield")] = $objRegistroEPPBrorg->get('street2');
-        $values[$key][$objRegistroEPPBrorg->getMsgLang("addresscomplementsfield")] = $objRegistroEPPBrorg->get('street3');
-        $values[$key][$objRegistroEPPBrorg->getMsgLang("citynamefield")] = $objRegistroEPPBrorg->get('city');
-        $values[$key][$objRegistroEPPBrorg->getMsgLang("stateprovincefield")] = $objRegistroEPPBrorg->get('sp');
-        $values[$key][$objRegistroEPPBrorg->getMsgLang("zipcodefield")] = $objRegistroEPPBrorg->get('pc');
-        $values[$key][$objRegistroEPPBrorg->getMsgLang("countrycodefield")] = $objRegistroEPPBrorg->get('cc');
-        $values[$key][$objRegistroEPPBrorg->getMsgLang("phonenumberfield")] = $objRegistroEPPBrorg->get('voice');
-        $values[$key]["Email"] = $objRegistroEPPBrorg->get('email');
+        $values[$key][$objRegistroEPPBrorg->getMsgLang("streetnamefield")] = $contactField('street1');
+        $values[$key][$objRegistroEPPBrorg->getMsgLang("streetnumberfield")] = $contactField('street2');
+        $values[$key][$objRegistroEPPBrorg->getMsgLang("addresscomplementsfield")] = $contactField('street3');
+        $values[$key][$objRegistroEPPBrorg->getMsgLang("citynamefield")] = $contactField('city');
+        $values[$key][$objRegistroEPPBrorg->getMsgLang("stateprovincefield")] = $contactField('sp');
+        $values[$key][$objRegistroEPPBrorg->getMsgLang("zipcodefield")] = $contactField('pc');
+        $values[$key][$objRegistroEPPBrorg->getMsgLang("countrycodefield")] = $contactField('cc');
+        $values[$key][$objRegistroEPPBrorg->getMsgLang("phonenumberfield")] = $contactField('voice');
+        $values[$key]["Email"] = $contactField('email');
 
     }
     /*
@@ -1133,6 +1156,16 @@ function registrobr_SaveContactDetails($params) {
                 return $values;
             }
         }
+        # verifyProvider() acima fica dentro do try e a excecao e engolida quando
+        # coderes == '1000'; sem esta checagem o Save seguiria em dominio de outro
+        # provedor e criaria contatos orfaos (domain:update/brorg:update seriam negados).
+        $providerID = trim((string) $objRegistroEPP->get('clID'));
+        $ourProviderID = trim((string) ($moduleparams['Username'] ?? ''));
+        if ($providerID !== '' && $ourProviderID !== '' && $providerID !== $ourProviderID) {
+            $values["error"] = RegistroEPPFactory::build('RegistroEPPBrorg')->getMsgLang('savecontactnotalloweed');
+            return $values;
+        }
+
         # Check results
         $coderes = $objRegistroEPP->get('coderes');
 
